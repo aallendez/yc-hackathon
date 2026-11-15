@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["spotipy>=2.24", "python-dotenv>=1.0"]
+# dependencies = ["spotipy>=2.24", "python-dotenv>=1.0", "requests>=2.31"]
 # ///
 """Quick smoke test: play "I'm the Problem" by Morgan Wallen on your Spotify account.
 
@@ -24,6 +24,7 @@ import sys
 import time
 from pathlib import Path
 
+import requests
 import spotipy
 from dotenv import load_dotenv
 from spotipy.oauth2 import SpotifyPKCE
@@ -31,7 +32,8 @@ from spotipy.oauth2 import SpotifyPKCE
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
-TRACK_QUERY = 'track:"I\'m the Problem" artist:"Morgan Wallen"'
+TITLE, ARTIST = "I'm the Problem", "Morgan Wallen"
+TRACK_QUERY = f'track:"{TITLE}" artist:"{ARTIST}"'
 REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:8888/callback")
 SCOPES = "user-read-playback-state user-modify-playback-state"
 
@@ -51,9 +53,22 @@ def get_client() -> spotipy.Spotify:
 
 
 def find_track(sp: spotipy.Spotify) -> dict:
+    """Look the track up via ReccoBeats (free, title search, returns Spotify links) so we
+    don't spend Spotify's tight dev-mode search quota; fall back to Spotify search."""
+    try:
+        r = requests.get("https://api.reccobeats.com/v1/track/search",
+                         params={"searchText": TITLE, "size": 25}, timeout=20)
+        for it in r.json().get("content", []):
+            if it["trackTitle"].lower() == TITLE.lower() and any(
+                    a["name"].lower() == ARTIST.lower() for a in it["artists"]):
+                tid = it["href"].rsplit("/", 1)[-1]
+                return {"name": it["trackTitle"], "uri": f"spotify:track:{tid}",
+                        "artists": [{"name": a["name"]} for a in it["artists"]]}
+    except (requests.RequestException, ValueError, KeyError):
+        pass
     results = sp.search(q=TRACK_QUERY, type="track", limit=5)["tracks"]["items"]
     if not results:
-        sys.exit("Couldn't find the track on Spotify.")
+        sys.exit("Couldn't find the track.")
     return results[0]
 
 

@@ -2,7 +2,7 @@
 .env
 .env.*
 !.env.example
-.spotify_cache
+.spotify_cache*
 .cache
 
 # Python
@@ -24,3 +24,6 @@ dist/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Personal listening data (copied from AI-DJ)
+data/

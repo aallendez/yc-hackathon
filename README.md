@@ -13,12 +13,12 @@ cp .env.example .env   # fill in keys
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8001
 
 # frontend (new terminal)
 cd frontend
 npm install
-npm run dev            # http://localhost:5173, /api proxied to :8000
+npm run dev            # http://localhost:5173, API proxied to :8001
 ```
 
 ## Spotify playback test
